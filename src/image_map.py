@@ -27,10 +27,19 @@ class ImageMap:
         colors_lab_img = cv2.cvtColor(colors_lab_img, cv2.COLOR_RGB2LAB)  
         colors_lab_img = common.float_lab(colors_lab_img)
         colors_lab_img = colors_lab_img.reshape((2**24, 3))
-        distances = np.array([common.color_distance(imgs_colors_lab_img[i], colors_lab_img) for i in range(imgs_amount)])
-        
-        colors = np.argmin(distances, axis=0)
-        colors = colors.reshape((256, 256, 256))
+
+        min_distances = np.full((2**24), np.finfo(np.float64).max, dtype=np.float64)
+        min_args = np.zeros((2**24), dtype=np.int64)
+
+        for i, img_color in enumerate(imgs_colors_lab_img):
+            distance = common.color_distance(img_color, colors_lab_img)
+            mask = np.argmin(np.stack([distance, min_distances]), axis=0)
+            inverse_mask = 1 - mask
+
+            min_args = (min_args * mask) + inverse_mask * i 
+            min_distances = (min_distances * mask) + inverse_mask * distance
+
+        colors = min_args.reshape((256, 256, 256))
 
         self._imgs = imgs
         self._colors = colors

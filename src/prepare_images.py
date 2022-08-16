@@ -9,7 +9,7 @@ import common
 
 def run(src: Path, dest: Path, width: int, height: int, out: Optional[Path] = None, override: bool = False):
     imgs = []
-    for _, img_path in zip(range(10), src.iterdir()):
+    for img_path in src.iterdir():
         img_name = img_path.name
         img_dest = dest / img_name
         img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGBA) 
@@ -21,7 +21,6 @@ def run(src: Path, dest: Path, width: int, height: int, out: Optional[Path] = No
                 continue
 
         cv2.imwrite(str(img_dest), img)
-
    
     if out:
         img_map = image_map.ImageMap(imgs)

@@ -44,12 +44,3 @@ def int_to_rgb(color: int) -> npt.NDArray:
 
     return np.array(digits[::-1])
 
-# serialization and deserialization of image maps do not necessarily preserve order of images
-# check if every number in arr1 can be mapped to every number in arr2
-def correspondence(arr1: npt.NDArray, arr2: npt.NDArray) -> bool:
-    if arr1.shape != arr2.shape:
-        return False
-
-    paired = np.stack([arr1, arr2], axis=-1)
-    return np.unique(arr1).size == np.unique(paired.reshape(-1, 2), axis=0).size
-
