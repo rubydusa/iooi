@@ -8,15 +8,7 @@ import cv2
 import common
 from image_map import ImageMap
 
-# src is rgb
-def transform_img(src: npt.NDArray, img_map: ImageMap) -> npt.NDArray:
-    indices = np.apply_along_axis(lambda x: img_map.colors[tuple(x)], 2, src)
-    output = np.array([i.img for i in img_map.imgs])[indices]
-    output = np.concatenate(output, axis=1)
-    output = np.concatenate(output, axis=1)
-
-    return output
-
+# apply image map over src, and paste upon source
 def run(src: Path, out: Path, imgs: Path, pallet: Path):
     src_img = cv2.imread(str(src))
 
@@ -27,7 +19,17 @@ def run(src: Path, out: Path, imgs: Path, pallet: Path):
     img_map.load(imgs)
 
     output = transform_img(src_img, img_map)
+    output = common.overlay_imgs(common.resize_to(src_img, output), output)
     cv2.imwrite(str(out), output)
+
+# src is bgr
+def transform_img(src: npt.NDArray, img_map: ImageMap) -> npt.NDArray:
+    indices = np.apply_along_axis(lambda x: img_map.colors[tuple(x)], 2, src)
+    output = np.array([i.img for i in img_map.imgs])[indices]
+    output = np.concatenate(output, axis=1)
+    output = np.concatenate(output, axis=1)
+
+    return output
 
 def main():
     parser = argparse.ArgumentParser("Create Images Out Of Images (IOOI)")

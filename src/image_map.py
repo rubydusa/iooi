@@ -28,7 +28,7 @@ class ImageMap:
         colors_lab_img = common.format_lab(colors_lab_img)
         colors_lab_img = colors_lab_img.reshape((2**24, 3))
 
-        # min_args is calculated iteratively because there isn't enough memory for ~1500 full rgb arrays (91GB of RAM is required)
+        # min_args is calculated iteratively because there isn't enough memory for ~1500 full bgr arrays (91GB of RAM is required)
         min_distances = np.full((2**24), np.finfo(np.float64).max, dtype=np.float64)
         min_args = np.zeros((2**24), dtype=np.int64)
 

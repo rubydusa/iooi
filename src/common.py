@@ -2,6 +2,9 @@ import numpy as np
 import numpy.typing as npt
 from dataclasses import dataclass
 
+import cv2
+from PIL import Image as PILImage
+
 @dataclass
 class Image:
     name: str
@@ -49,3 +52,12 @@ def int_to_bgr(color: int) -> npt.NDArray:
 
     return np.array(digits[::-1])
 
+# assumes base and top are both BGR(A)
+def overlay_imgs(base: npt.NDArray, top: npt.NDArray, dest: tuple[int, int]=(0, 0), source: tuple[int, int]=(0, 0)) -> npt.NDArray:
+    output = PILImage.fromarray(cv2.cvtColor(base, cv2.COLOR_BGR2RGBA))
+    output.alpha_composite(PILImage.fromarray(cv2.cvtColor(top, cv2.COLOR_BGR2RGBA)), dest=dest, source=source)
+
+    return cv2.cvtColor(np.asarray(output), cv2.COLOR_RGBA2BGRA)
+
+def resize_to(src: npt.NDArray, dest: npt.NDArray, inter=cv2.INTER_NEAREST) -> npt.NDArray:
+    return cv2.resize(src, dest.shape[:2][::-1], inter)

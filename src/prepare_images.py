@@ -8,13 +8,6 @@ from image_map import ImageMap
 import common
 
 def run(src: Path, dest: Path, width: int, height: int, out: Optional[Path] = None, override: bool = False):
-    if not src.is_dir():
-        raise Exception("Source path is not a directory")
-    if not dest.is_dir():
-        raise Exception("Destination path is not a directory")
-    if out and out.is_dir():
-        raise Exception("Output path is a directory")
-
     imgs = []
 
     for img_path in src.iterdir():
