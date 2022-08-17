@@ -26,10 +26,6 @@ def run(
         img = cv2.resize(img, (width, height), interpolation=cv2.INTER_NEAREST)
         imgs.append(common.Image(img_name, img))
 
-        if not override:
-            if img_dest.exists():
-                continue
-
         cv2.imwrite(str(img_dest), img)
 
     if out:
@@ -55,13 +51,6 @@ def main():
         type=Path,
         help="Where to save the ImageMap (default: None) will not generate ImageMap if argument not present",
     )
-    parser.add_argument(
-        "--override",
-        nargs="?",
-        default=False,
-        type=bool,
-        help="Whether to override existing files in destination folder (default: False)",
-    )
 
     args = parser.parse_args()
     run(
@@ -70,7 +59,6 @@ def main():
         args.width,
         args.height,
         out=args.out,
-        override=args.override,
     )
 
 
