@@ -4,16 +4,24 @@ import argparse
 from typing import Optional
 from pathlib import Path
 
-import image_map
+from image_map import ImageMap
 import common
 
 def run(src: Path, dest: Path, width: int, height: int, out: Optional[Path] = None, override: bool = False):
+    if not src.is_dir():
+        raise Exception("Source path is not a directory")
+    if not dest.is_dir():
+        raise Exception("Destination path is not a directory")
+    if out and out.is_dir():
+        raise Exception("Output path is a directory")
+
     imgs = []
+
     for img_path in src.iterdir():
         img_name = img_path.name
         img_dest = dest / img_name
-        img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGBA) 
-        img = cv2.resize(img, (width, height), interpolation= cv2.INTER_NEAREST)
+        img = cv2.imread(str(img_path), cv2.IMREAD_UNCHANGED) 
+        img = cv2.resize(img, (width, height), interpolation=cv2.INTER_NEAREST)
         imgs.append(common.Image(img_name, img))
 
         if not override:
@@ -23,7 +31,7 @@ def run(src: Path, dest: Path, width: int, height: int, out: Optional[Path] = No
         cv2.imwrite(str(img_dest), img)
    
     if out:
-        img_map = image_map.ImageMap(imgs)
+        img_map = ImageMap(imgs)
         serializied = img_map.serialize()
         serializied_json = json.dumps(serializied, indent=4)
 
@@ -32,15 +40,15 @@ def run(src: Path, dest: Path, width: int, height: int, out: Optional[Path] = No
 
 def main():
     parser = argparse.ArgumentParser("Prepare images to be used by iooi")
-    parser.add_argument("src", nargs=1, type=Path, help="Path of source folder")
-    parser.add_argument("dest", nargs=1, type=Path, help="Path of destination folder")
-    parser.add_argument("width", nargs=1, type=int, help="Width of images in pixels")
-    parser.add_argument("height", nargs=1, type=int, help="Height of images in pixels")
-    parser.add_argument("--out", nargs="?", default=None, type=Path, help="Where to save the ImageMap (default: None) will not generate ImageMap if argument not present")
+    parser.add_argument("src", type=Path, help="Path to source folder")
+    parser.add_argument("dest", type=Path, help="Path to destination folder")
+    parser.add_argument("width", type=int, help="Width of images in pixels")
+    parser.add_argument("height", type=int, help="Height of images in pixels")
+    parser.add_argument("-o", "--out", nargs="?", default=None, type=Path, help="Where to save the ImageMap (default: None) will not generate ImageMap if argument not present")
     parser.add_argument("--override", nargs="?", default=False, type=bool, help="Whether to override existing files in destination folder (default: False)")
 
     args = parser.parse_args()
-    run(args.src[0], args.dest[0], args.width[0], args.height[0], out=args.out, override=args.override)
+    run(args.src, args.dest, args.width, args.height, out=args.out, override=args.override)
 
 if __name__ == "__main__":
     main()
