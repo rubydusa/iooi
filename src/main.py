@@ -1,17 +1,20 @@
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
 import numpy.typing as npt
 
-import common
+from filters import Mode, dispatcher
 from image_map import ImageMap
 
 
-# apply image map over src, and paste upon source
-def run(src: Path, out: Path, imgs: Path, pallet: Path):
+# load image, lookup dispatcher and apply filter with image map, write to out
+def run(
+    src: Path, out: Path, imgs: Path, pallet: Path, dispatcher: dict, mode: Mode, *args
+):
     src_img = cv2.imread(str(src))
 
     with open(pallet) as pallet_f:
@@ -20,19 +23,9 @@ def run(src: Path, out: Path, imgs: Path, pallet: Path):
     img_map = ImageMap.deserialize(img_map)
     img_map.load(imgs)
 
-    output = transform_img(src_img, img_map)
-    output = common.overlay_imgs(common.resize_to(src_img, output), output)
+    output = dispatcher[mode](src_img, img_map, *args)
+
     cv2.imwrite(str(out), output)
-
-
-# src is bgr
-def transform_img(src: npt.NDArray, img_map: ImageMap) -> npt.NDArray:
-    indices = np.apply_along_axis(lambda x: img_map.colors[tuple(x)], 2, src)
-    output = np.array([i.img for i in img_map.imgs])[indices]
-    output = np.concatenate(output, axis=1)
-    output = np.concatenate(output, axis=1)
-
-    return output
 
 
 def main():
@@ -55,9 +48,33 @@ def main():
         type=Path,
         help="Pallet JSON file (default: ./pallet.json)",
     )
+    parser.add_argument(
+        "-m",
+        "--mode",
+        nargs="?",
+        default=Mode.SINGLE_LAYER.name,
+        type=str,
+        choices=[mode.name for mode in list(Mode)],
+        help="Filter to apply (default: SINGLE_LAYER)",
+    )
+    parser.add_argument(
+        "-a",
+        "--args",
+        nargs="*",
+        help="Additional positional arguments, depends on Mode",
+    )
     args = parser.parse_args()
 
-    run(args.src, args.out, args.images, args.pallet)
+    filter_args = args.args if args.args else []
+    run(
+        args.src,
+        args.out,
+        args.images,
+        args.pallet,
+        dispatcher(),
+        Mode[args.mode],
+        *filter_args
+    )
 
 
 if __name__ == "__main__":

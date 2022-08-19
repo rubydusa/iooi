@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Iterator
 
 import cv2
 import numpy as np
@@ -10,6 +11,11 @@ from PIL import Image as PILImage
 class Image:
     name: str
     img: npt.NDArray
+
+
+# =================== #
+# Image Map Utilities #
+# =================== #
 
 
 # get average color (BGRA), alpha used as weight
@@ -58,6 +64,11 @@ def int_to_bgr(color: int) -> npt.NDArray:
     return np.array(digits[::-1])
 
 
+# ============== #
+# Main Utilities #
+# ============== #
+
+
 # assumes base and top are both BGR(A)
 def overlay_imgs(
     base: npt.NDArray,
@@ -73,6 +84,42 @@ def overlay_imgs(
     )
 
     return cv2.cvtColor(np.asarray(output), cv2.COLOR_RGBA2BGRA)
+
+
+# offset image right-down and use fill values of edge over resized
+# take average over shape / resize grid
+# returned array is same shape as img
+def offseted_averaged(img: npt.NDArray, offset: int, resize: int) -> npt.NDArray:
+    resized_shape = np.array(img.shape[:2][::-1]) * resize
+    resized_img = cv2.resize(img, dsize=resized_shape, interpolation=cv2.INTER_NEAREST)
+    reverse_offset = resize - offset
+
+    padded_img = np.pad(
+        resized_img,
+        ((offset, reverse_offset), (offset, reverse_offset), (0, 0)),
+        mode="edge",
+    )
+    h, w, c = padded_img.shape
+    chunked_img = padded_img.reshape((h // resize, resize, w // resize, resize, c))
+    averaged_img = np.average(chunked_img, axis=(1, 3))
+    averaged_img = averaged_img[:-1, :-1, :]
+    averaged_img = np.around(averaged_img)
+    averaged_img = np.clip(averaged_img, 0, 255)
+    averaged_img = averaged_img.astype(np.uint8)
+
+    return averaged_img
+
+
+# offset image right-down and cut to fit original resolution
+# uses transperent pixels for BGRA/RGBA and black for BGR/RGB
+def offseted_cut(img: npt.NDArray, offset_x: int, offset_y: int) -> npt.NDArray:
+    offseted_img = np.pad(
+        img, ((offset_y, 0), (offset_x, 0), (0, 0)), mode="constant", constant_values=0
+    )
+    x, y = offseted_img.shape[:2][::-1]
+    cut_img = offseted_img[: y - offset_y, : x - offset_x, :]
+
+    return cut_img
 
 
 def resize_to(
