@@ -125,4 +125,4 @@ def offseted_cut(img: npt.NDArray, offset_x: int, offset_y: int) -> npt.NDArray:
 def resize_to(
     src: npt.NDArray, dest: npt.NDArray, inter=cv2.INTER_NEAREST
 ) -> npt.NDArray:
-    return cv2.resize(src, dest.shape[:2][::-1], inter)
+    return cv2.resize(src, dest.shape[:2][::-1], interpolation=inter)
