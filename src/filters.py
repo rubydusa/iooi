@@ -46,6 +46,9 @@ def multi_layered(img: npt.NDArray, img_map: ImageMap, *args) -> npt.NDArray:
 
         layers.append(transformed_img)
 
+    # prioritize layer with least offset
+    layers = layers[::-1]
+
     output = reduce(lambda base, top: common.overlay_imgs(base, top), layers)
     output = output[unit_y:-unit_y, unit_x:-unit_x, :]
     output = common.overlay_imgs(common.resize_to(img, output), output)
