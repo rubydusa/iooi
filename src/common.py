@@ -18,22 +18,6 @@ class Image:
 # =================== #
 
 
-# return dominant color using k-mean clustering
-# output color always has 3 channels
-def img_to_color(img: npt.NDArray) -> npt.NDArray:
-    channels = img.shape[2]
-    pixels = img.reshape(-1, channels).astype(np.float32)
-
-    weights = np.ones((pixels.shape[0]), dtype=np.float32)
-    # use alpha as weight
-    if channels == 4:
-        pixels, weights = pixels[:, :-1], pixels[:, -1]
-
-    result = kmean_weighted(pixels, weights, KMeanWeightedArgs(3))
-    dominant = result.centroids[0][:3].astype(np.uint8)
-    return dominant
-
-
 def format_lab(lab_img: npt.NDArray) -> npt.NDArray:
     # cv2 weird lab colors: 0 <= L <= 255, 42 <= A <= 226, 20 <= B <= 223
     # correct lab colors: 0 <= L <= 100, -128 <= A <= 127, -128 <= B <= 127
@@ -130,71 +114,3 @@ def resize_to(
     src: npt.NDArray, dest: npt.NDArray, inter=cv2.INTER_NEAREST
 ) -> npt.NDArray:
     return cv2.resize(src, dest.shape[:2][::-1], interpolation=inter)
-
-
-# ========== #
-# Algorithms #
-# ========== #
-
-
-@dataclass(frozen=True)
-class KMeanWeightedArgs:
-    k: int
-    repeats: int = 200
-
-
-@dataclass(frozen=True)
-class KMeanWeightedResult:
-    centroids: npt.NDArray[np.float32]
-    cluster_sizes: npt.NDArray[np.uint32]
-    labels: npt.NDArray[np.uint32]
-
-
-# a is 2 dimensional and weights is 1 dimensional
-# mean calculation is weighted
-def kmean_weighted(
-    a: npt.NDArray[np.float32],
-    weights: npt.NDArray[np.float32],
-    args: KMeanWeightedArgs,
-) -> KMeanWeightedResult:
-    values = np.column_stack((a, weights))
-
-    # random centroids
-    centroids = values[np.random.choice(np.arange(values.shape[0]), args.k)]
-    cluster_sizes = np.zeros((args.k), dtype=np.uint32)
-    labels = np.array([])
-
-    for _ in range(args.repeats):
-        # disregard weight in distance
-        distances = np.array(
-            [color_distance(centroid[:-1], values[:, :-1]) for centroid in centroids]
-        )
-        labels = np.argmin(distances, axis=0)
-
-        # -1 is cluster group and -2 is weight arg
-        values_indexed = np.column_stack((values, labels))
-        values_indexed = values_indexed[np.argsort(values_indexed[:, -1])]
-
-        clusters = np.split(
-            values_indexed[:, :-1],
-            np.unique(values_indexed[:, -1], return_index=True)[1][1:],
-        )
-
-        centroids = np.array(
-            [
-                np.average(cluster, weights=cluster[:, -1], axis=0)
-                if np.sum(cluster[:, -1]) > 0
-                else np.average(cluster, axis=0)
-                for cluster in clusters
-            ]
-        )
-        cluster_sizes = np.array([cluster.shape[0] for cluster in clusters])
-
-    # sort from biggest to smallest
-    order = np.argsort(cluster_sizes)[::-1]
-
-    centroids = centroids[order]
-    cluster_sizes = cluster_sizes[order]
-    labels = labels.astype(np.uint32)
-
-    return KMeanWeightedResult(centroids, cluster_sizes, labels)

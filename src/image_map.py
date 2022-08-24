@@ -6,6 +6,7 @@ import numpy as np
 import numpy.typing as npt
 
 import common
+from image_to_color import Mode, dispatcher
 
 
 # map of all bgr colors to a set of images
@@ -13,11 +14,12 @@ class ImageMap:
     _imgs: list[common.Image]
     _colors: npt.NDArray  # 1D array size 2**24 where each value is the index of the corresponding hex value
 
-    def __initialize(self, imgs: list[common.Image]):
+    def __initialize(self, imgs: list[common.Image], mode: Mode):
+        img_to_color = dispatcher()[mode]
         imgs_contents = [i.img for i in imgs]
 
         imgs_amount = len(imgs_contents)
-        imgs_colors = np.array([common.img_to_color(i) for i in imgs_contents])
+        imgs_colors = np.array([img_to_color(i) for i in imgs_contents])
 
         imgs_colors_lab_img = imgs_colors.reshape((1, imgs_amount, 3))
         imgs_colors_lab_img = cv2.cvtColor(imgs_colors_lab_img, cv2.COLOR_BGR2LAB)
@@ -48,11 +50,13 @@ class ImageMap:
         self._colors = colors
 
     # imgs is bgra images
-    def __init__(self, imgs: Optional[list[common.Image]] = None):
+    def __init__(
+        self, imgs: Optional[list[common.Image]] = None, mode: Mode = Mode.KMEAN
+    ):
         if imgs is None:
             return
         else:
-            self.__initialize(imgs)
+            self.__initialize(imgs, mode)
 
     def serialize(self) -> dict:
         result = dict()
