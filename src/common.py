@@ -7,7 +7,7 @@ import numpy.typing as npt
 from PIL import Image as PILImage
 
 
-@dataclass
+@dataclass(frozen=True)
 class Image:
     name: str
     img: npt.NDArray
